@@ -262,10 +262,28 @@ class CricketAnalysisApp {
         const accuracyAnalysis = metrics.accuracy_analysis || {};
         const trajectoryAnalysis = metrics.trajectory_analysis || {};
         const overallScores = data.overall_scores || {};
+        const visualizations = data.visualizations || {};
 
         return `
             <div class="analysis-section">
                 <h4>🏏 Bowling Analysis Results</h4>
+                
+                ${visualizations.pitch_plot ? `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="visualization-section">
+                            <h5>Hawk-Eye Ball Trajectory Analysis</h5>
+                            <div class="text-center">
+                                <img src="data:image/png;base64,${visualizations.pitch_plot}" 
+                                     class="img-fluid analysis-chart" 
+                                     alt="Hawk-Eye Pitch Plot"
+                                     style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
+                            </div>
+                            <p class="text-muted text-center mt-2">${visualizations.pitch_plot_description}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
                 
                 <div class="row mb-4">
                     <div class="col-md-4">
@@ -331,10 +349,45 @@ class CricketAnalysisApp {
         const techniqueAnalysis = data.technique_analysis || {};
         const improvementPlan = data.improvement_plan || {};
         const aspectScores = metrics.aspect_scores || {};
+        const visualizations = data.visualizations || {};
 
         return `
             <div class="analysis-section">
                 <h4>🏃 Batting Analysis Results</h4>
+                
+                ${visualizations.labeled_frames ? `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="visualization-section">
+                            <h5>Skeleton Tracking Analysis</h5>
+                            <div class="text-center">
+                                <img src="data:image/jpeg;base64,${visualizations.labeled_frames}" 
+                                     class="img-fluid analysis-chart" 
+                                     alt="Skeleton Tracking"
+                                     style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
+                            </div>
+                            <p class="text-muted text-center mt-2">${visualizations.labeled_frames_description}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                ${visualizations.summary_plot ? `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="visualization-section">
+                            <h5>Technique Analysis Charts</h5>
+                            <div class="text-center">
+                                <img src="data:image/png;base64,${visualizations.summary_plot}" 
+                                     class="img-fluid analysis-chart" 
+                                     alt="Batting Technique Charts"
+                                     style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
+                            </div>
+                            <p class="text-muted text-center mt-2">${visualizations.summary_plot_description}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
                 
                 <div class="row mb-4">
                     <div class="col-md-4">
