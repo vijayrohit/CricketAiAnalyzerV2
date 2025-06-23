@@ -26,9 +26,9 @@ class BallTracker:
         self.max_distance = 100
         self.trajectory_smoothing = 5
         
-        # Initialize trackers
-        self.ball_tracker = cv2.TrackerCSRT_create()
+        # Initialize tracking state
         self.tracking_initialized = False
+        self.last_known_position = None
         
     def detect_ball_candidates(self, frame: np.ndarray) -> List[Tuple[int, int, int]]:
         """
