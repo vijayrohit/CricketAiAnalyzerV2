@@ -161,19 +161,19 @@ class BallTracker:
                     velocity_magnitude = np.sqrt(velocity_x**2 + velocity_y**2)
                     
                     velocity = {
-                        'x': velocity_x,
-                        'y': velocity_y,
-                        'magnitude': velocity_magnitude
+                        'x': float(velocity_x),
+                        'y': float(velocity_y),
+                        'magnitude': float(velocity_magnitude)
                     }
                     velocities.append(velocity_magnitude)
                 
                 frame_data.append({
-                    'frame': frame_idx,
+                    'frame': int(frame_idx),
                     'ball_detected': True,
                     'position': {
-                        'x': current_position[0],
-                        'y': current_position[1],
-                        'radius': current_position[2]
+                        'x': float(current_position[0]),
+                        'y': float(current_position[1]),
+                        'radius': float(current_position[2])
                     },
                     'velocity': velocity
                 })
@@ -187,15 +187,15 @@ class BallTracker:
             delivery_metrics = self._calculate_delivery_metrics(ball_positions, velocities, frames[0].shape)
             
             return {
-                'frames_analyzed': len(frames),
-                'ball_detected_frames': len([f for f in frame_data if f['ball_detected']]),
-                'detection_rate': len([f for f in frame_data if f['ball_detected']]) / len(frames),
+                'frames_analyzed': int(len(frames)),
+                'ball_detected_frames': int(len([f for f in frame_data if f['ball_detected']])),
+                'detection_rate': float(len([f for f in frame_data if f['ball_detected']]) / len(frames)),
                 'frame_data': frame_data,
                 'trajectory_analysis': trajectory_analysis,
                 'delivery_metrics': delivery_metrics,
-                'average_velocity': np.mean(velocities) if velocities else 0,
-                'max_velocity': np.max(velocities) if velocities else 0,
-                'velocity_data': velocities
+                'average_velocity': float(np.mean(velocities)) if velocities else 0.0,
+                'max_velocity': float(np.max(velocities)) if velocities else 0.0,
+                'velocity_data': [float(v) for v in velocities]
             }
             
         except Exception as e:
@@ -228,8 +228,8 @@ class BallTracker:
                 trajectory_poly = np.poly1d(z)
                 
                 # Calculate bounce point (lowest y-coordinate)
-                bounce_frame = None
-                bounce_position = None
+                bounce_frame = 0
+                bounce_position = {'x': 0.0, 'y': 0.0}
                 min_y = float('inf')
                 
                 for data in frame_data:
@@ -249,12 +249,12 @@ class BallTracker:
                     'trajectory_type': trajectory_type,
                     'polynomial_coefficients': z.tolist(),
                     'bounce_point': {
-                        'frame': bounce_frame,
-                        'position': bounce_position
+                        'frame': int(bounce_frame),
+                        'position': [float(bounce_position['x']), float(bounce_position['y'])]
                     },
-                    'horizontal_distance': max(x_coords) - min(x_coords),
-                    'vertical_distance': max(y_coords) - min(y_coords),
-                    'trajectory_smoothness': self._calculate_smoothness(x_coords, y_coords)
+                    'horizontal_distance': float(max(x_coords) - min(x_coords)),
+                    'vertical_distance': float(max(y_coords) - min(y_coords)),
+                    'trajectory_smoothness': float(self._calculate_smoothness(x_coords, y_coords))
                 }
             
             return {'error': 'Could not fit trajectory'}
@@ -282,8 +282,8 @@ class BallTracker:
             height, width = frame_shape[:2]
             
             # Estimate delivery speed
-            avg_speed = np.mean(velocities) if velocities else 0
-            max_speed = np.max(velocities) if velocities else 0
+            avg_speed = float(np.mean(velocities)) if velocities else 0.0
+            max_speed = float(np.max(velocities)) if velocities else 0.0
             
             # Classify delivery speed
             speed_category = "Slow"
@@ -299,13 +299,13 @@ class BallTracker:
             y_coords = [pos[1] for pos in positions]
             
             # Line analysis (horizontal deviation)
-            line_variation = np.std(x_coords)
+            line_variation = float(np.std(x_coords))
             line_consistency = "Good" if line_variation < width * 0.05 else "Needs Improvement"
             
             # Length analysis (where ball pitches)
             pitch_position = "Unknown"
             if y_coords:
-                avg_y = np.mean(y_coords)
+                avg_y = float(np.mean(y_coords))
                 if avg_y < height * 0.3:
                     pitch_position = "Short"
                 elif avg_y < height * 0.6:
@@ -316,17 +316,17 @@ class BallTracker:
                     pitch_position = "Yorker"
             
             return {
-                'average_speed_ms': avg_speed,
-                'average_speed_kmh': avg_speed * 3.6,
-                'max_speed_ms': max_speed,
-                'max_speed_kmh': max_speed * 3.6,
+                'average_speed_ms': float(avg_speed),
+                'average_speed_kmh': float(avg_speed * 3.6),
+                'max_speed_ms': float(max_speed),
+                'max_speed_kmh': float(max_speed * 3.6),
                 'speed_category': speed_category,
                 'line_consistency': line_consistency,
-                'line_variation_pixels': line_variation,
+                'line_variation_pixels': float(line_variation),
                 'pitch_position': pitch_position,
                 'delivery_accuracy': {
-                    'line_score': max(0, 100 - (line_variation / width * 100 * 10)),
-                    'length_score': 85 if pitch_position == "Good Length" else 60
+                    'line_score': float(max(0, 100 - (line_variation / width * 100 * 10))),
+                    'length_score': float(85 if pitch_position == "Good Length" else 60)
                 }
             }
             

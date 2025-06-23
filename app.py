@@ -138,10 +138,12 @@ def analyze_bowling(file_id):
         
         logger.info(f"Starting bowling analysis for {file_id}")
         
-        # Process video and track ball
-        frames = video_processor.extract_frames(video_path)
+        # Process video and track ball with reduced frame count for performance
+        frames = video_processor.extract_frames(video_path, max_frames=30)
         if not frames:
             return jsonify({'error': 'Failed to process video'}), 500
+        
+        logger.info(f"Processing {len(frames)} frames for bowling analysis")
         
         # Track ball throughout the video
         ball_tracking_data = ball_tracker.track_ball(frames)
@@ -185,10 +187,12 @@ def analyze_batting(file_id):
         
         logger.info(f"Starting batting analysis for {file_id}")
         
-        # Process video and analyze pose
-        frames = video_processor.extract_frames(video_path)
+        # Process video and analyze pose with reduced frame count for performance
+        frames = video_processor.extract_frames(video_path, max_frames=30)
         if not frames:
             return jsonify({'error': 'Failed to process video'}), 500
+        
+        logger.info(f"Processing {len(frames)} frames for batting analysis")
         
         # Analyze batting pose and technique
         pose_data = pose_analyzer.analyze_batting_pose(frames)

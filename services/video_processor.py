@@ -77,13 +77,13 @@ class VideoProcessor:
             logger.error(f"Error getting video info: {str(e)}")
             return {}
     
-    def extract_frames(self, video_path: str, max_frames: int = 300) -> List[np.ndarray]:
+    def extract_frames(self, video_path: str, max_frames: int = 50) -> List[np.ndarray]:
         """
         Extract frames from video for analysis.
         
         Args:
             video_path: Path to the video file
-            max_frames: Maximum number of frames to extract
+            max_frames: Maximum number of frames to extract (reduced for performance)
             
         Returns:
             List of numpy arrays representing frames
@@ -97,27 +97,39 @@ class VideoProcessor:
             frames = []
             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             
+            if frame_count <= 0:
+                logger.error(f"Invalid frame count: {frame_count}")
+                cap.release()
+                return []
+            
             # Calculate step size to get evenly distributed frames
             step = max(1, frame_count // max_frames)
             
-            frame_index = 0
-            while len(frames) < max_frames:
-                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+            # Use sequential reading instead of seeking for better performance
+            current_frame = 0
+            target_frame = 0
+            
+            while len(frames) < max_frames and current_frame < frame_count:
                 ret, frame = cap.read()
                 
                 if not ret:
                     break
                 
-                if frame is not None:
-                    frames.append(frame)
+                if current_frame == target_frame:
+                    if frame is not None:
+                        # Resize frame to reduce memory usage
+                        frame = self.resize_frame(frame, max_width=480)
+                        frames.append(frame)
+                    target_frame += step
                 
-                frame_index += step
+                current_frame += 1
                 
-                if frame_index >= frame_count:
+                # Safety break to prevent infinite loops
+                if current_frame > frame_count * 2:
                     break
             
             cap.release()
-            logger.info(f"Extracted {len(frames)} frames from video")
+            logger.info(f"Extracted {len(frames)} frames from video (total: {frame_count})")
             return frames
             
         except Exception as e:
