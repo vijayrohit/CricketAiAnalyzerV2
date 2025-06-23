@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Cricket Analysis AI</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <span class="display-6">🏏</span> Cricket Analysis AI
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Home</a>
+                <a class="nav-link active" href="/api-docs">API Docs</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="mb-5">
+                    <h1 class="display-5 mb-3">🚀 API Documentation</h1>
+                    <p class="lead">Complete API reference for Cricket Analysis AI services</p>
+                </div>
+
+                <!-- Overview -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>📖 Overview</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>The Cricket Analysis API provides AI-powered video analysis capabilities for cricket performance evaluation. The API supports two main analysis types:</p>
+                        <ul>
+                            <li><strong>Bowling Analysis:</strong> Ball tracking, speed measurement, trajectory analysis, and delivery accuracy assessment</li>
+                            <li><strong>Batting Analysis:</strong> Pose estimation, technique evaluation, stance analysis, and performance scoring</li>
+                        </ul>
+                        <div class="alert alert-info">
+                            <strong>Base URL:</strong> <code>http://your-domain.com/api</code><br>
+                            <strong>Response Format:</strong> JSON<br>
+                            <strong>Max File Size:</strong> 500MB<br>
+                            <strong>Supported Formats:</strong> MP4, AVI, MOV, MKV
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Check -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>❤️ Health Check</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="api-endpoint">GET /api/health</div>
+                        <p>Check the health status of all API services.</p>
+                        
+                        <h6>Response Example:</h6>
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
+  "status": "healthy",
+  "timestamp": "2024-12-23T10:30:00.000Z",
+  "services": {
+    "video_processor": "active",
+    "ball_tracker": "active",
+    "pose_analyzer": "active",
+    "report_generator": "active"
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Video Upload -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>📤 Upload Video</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="api-endpoint">POST /api/upload</div>
+                        <p>Upload a cricket video file for analysis.</p>
+                        
+                        <h6>Request Parameters:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>video</code></td>
+                                        <td>File</td>
+                                        <td>Yes</td>
+                                        <td>Video file (MP4, AVI, MOV, MKV format, max 500MB)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h6>Success Response (200):</h6>
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
+  "message": "Video uploaded successfully",
+  "file_id": "uuid-string",
+  "filename": "cricket_video.mp4",
+  "upload_time": "2024-12-23T10:30:00.000Z"
+}</code></pre>
+
+                        <h6>Error Responses:</h6>
+                        <ul>
+                            <li><strong>400:</strong> No video file provided, invalid file type, or corrupted video</li>
+                            <li><strong>413:</strong> File too large (exceeds 500MB limit)</li>
+                            <li><strong>500:</strong> Upload failed due to server error</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Bowling Analysis -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>🏏 Bowling Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="api-endpoint">POST /api/analyze/bowling/{file_id}</div>
+                        <p>Perform bowling analysis with ball tracking and trajectory analysis.</p>
+                        
+                        <h6>URL Parameters:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>file_id</code></td>
+                                        <td>String</td>
+                                        <td>Unique identifier returned from upload endpoint</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h6>Success Response (200):</h6>
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
+  "report_type": "bowling_analysis",
+  "generated_at": "2024-12-23T10:30:00.000Z",
+  "video_info": {
+    "fps": 30,
+    "duration": 15.5,
+    "resolution": "1920x1080"
+  },
+  "performance_metrics": {
+    "speed_analysis": {
+      "average_speed_kmh": 142.5,
+      "max_speed_kmh": 148.2,
+      "speed_category": "Fast",
+      "speed_consistency": "Good"
+    },
+    "accuracy_analysis": {
+      "line_consistency": "Good",
+      "length_assessment": "Good Length",
+      "accuracy_score": 78
+    },
+    "trajectory_analysis": {
+      "trajectory_type": "Parabolic",
+      "trajectory_smoothness": 85,
+      "bounce_point": {
+        "frame": 45,
+        "position": {"x": 320, "y": 480}
+      }
+    }
+  },
+  "overall_scores": {
+    "speed": 85,
+    "accuracy": 78,
+    "consistency": 82,
+    "overall": 82
+  },
+  "recommendations": [
+    "Focus on maintaining consistent line",
+    "Work on length control for better accuracy"
+  ]
+}</code></pre>
+
+                        <h6>Error Responses:</h6>
+                        <ul>
+                            <li><strong>404:</strong> Video file not found</li>
+                            <li><strong>500:</strong> Analysis failed due to processing error</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Batting Analysis -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>🏃 Batting Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="api-endpoint">POST /api/analyze/batting/{file_id}</div>
+                        <p>Perform batting analysis with pose estimation and technique evaluation.</p>
+                        
+                        <h6>URL Parameters:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>file_id</code></td>
+                                        <td>String</td>
+                                        <td>Unique identifier returned from upload endpoint</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h6>Success Response (200):</h6>
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
+  "report_type": "batting_analysis",
+  "generated_at": "2024-12-23T10:30:00.000Z",
+  "video_info": {
+    "fps": 30,
+    "duration": 12.8,
+    "resolution": "1920x1080"
+  },
+  "performance_metrics": {
+    "overall_technique_score": 78.5,
+    "technique_grade": "B",
+    "performance_level": "Good",
+    "consistency_score": 82.3,
+    "aspect_scores": {
+      "Stance": 85,
+      "Head Position": 72,
+      "Shoulder Alignment": 88,
+      "Arm Position": 75,
+      "Balance": 80,
+      "Weight Transfer": 78
+    }
+  },
+  "technique_analysis": {
+    "strengths": [
+      {"category": "stance", "score": 85},
+      {"category": "shoulder_alignment", "score": 88}
+    ],
+    "weaknesses": [
+      {"category": "head_position", "score": 72},
+      {"category": "arm_position", "score": 75}
+    ]
+  },
+  "improvement_plan": {
+    "immediate_focus": ["Head Position", "Arm Position"],
+    "recommendations": [
+      "Keep your head still and eyes level",
+      "Focus on keeping elbows at the same height"
+    ],
+    "practice_drills": [
+      "Head still drills with tennis ball on head",
+      "Shadow batting with focus on arm position"
+    ]
+  }
+}</code></pre>
+
+                        <h6>Error Responses:</h6>
+                        <ul>
+                            <li><strong>404:</strong> Video file not found</li>
+                            <li><strong>500:</strong> Analysis failed due to processing error</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Analysis Status -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>📊 Analysis Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="api-endpoint">GET /api/analysis/{file_id}/status</div>
+                        <p>Check the analysis status for a specific video file.</p>
+                        
+                        <h6>URL Parameters:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>file_id</code></td>
+                                        <td>String</td>
+                                        <td>Unique identifier returned from upload endpoint</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h6>Success Response (200):</h6>
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
+  "file_id": "uuid-string",
+  "video_exists": true,
+  "bowling_analysis": {
+    "completed": true,
+    "cached": true
+  },
+  "batting_analysis": {
+    "completed": false,
+    "cached": false
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- List Videos -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>📋 List Videos</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="api-endpoint">GET /api/videos</div>
+                        <p>Retrieve a list of all uploaded videos and their analysis status.</p>
+                        
+                        <h6>Success Response (200):</h6>
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
+  "videos": [
+    {
+      "file_id": "uuid-string-1",
+      "filename": "cricket_bowling.mp4",
+      "size": 25600000,
+      "upload_time": "2024-12-23T10:30:00.000Z",
+      "bowling_analyzed": true,
+      "batting_analyzed": false
+    },
+    {
+      "file_id": "uuid-string-2",
+      "filename": "batting_practice.mov",
+      "size": 18700000,
+      "upload_time": "2024-12-23T11:15:00.000Z",
+      "bowling_analyzed": false,
+      "batting_analyzed": true
+    }
+  ]
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Error Codes -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>⚠️ Error Codes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Status</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>200</td>
+                                        <td>OK</td>
+                                        <td>Request successful</td>
+                                    </tr>
+                                    <tr>
+                                        <td>400</td>
+                                        <td>Bad Request</td>
+                                        <td>Invalid request parameters or file format</td>
+                                    </tr>
+                                    <tr>
+                                        <td>404</td>
+                                        <td>Not Found</td>
+                                        <td>Video file or endpoint not found</td>
+                                    </tr>
+                                    <tr>
+                                        <td>413</td>
+                                        <td>Payload Too Large</td>
+                                        <td>File size exceeds 500MB limit</td>
+                                    </tr>
+                                    <tr>
+                                        <td>500</td>
+                                        <td>Internal Server Error</td>
+                                        <td>Processing error or server failure</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rate Limits -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>🚦 Usage Guidelines</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>File Requirements:</h6>
+                                <ul>
+                                    <li>Maximum file size: 500MB</li>
+                                    <li>Supported formats: MP4, AVI, MOV, MKV</li>
+                                    <li>Minimum resolution: 480p recommended</li>
+                                    <li>Clear visibility of players required</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Performance Tips:</h6>
+                                <ul>
+                                    <li>Higher resolution videos provide better analysis</li>
+                                    <li>Good lighting improves ball detection</li>
+                                    <li>Stable camera angles work best</li>
+                                    <li>Results are cached for repeated requests</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Interface -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>🧪 API Test Interface</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>You can test the API endpoints using the interactive interface on the <a href="/" class="text-decoration-none">main application page</a>.</p>
+                        
+                        <div class="alert alert-info">
+                            <strong>Quick Test:</strong> Use the health check endpoint to verify API connectivity:<br>
+                            <code>curl -X GET http://your-domain.com/api/health</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-body-tertiary py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0 text-muted">Cricket Analysis AI API Documentation - Version 1.0</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
