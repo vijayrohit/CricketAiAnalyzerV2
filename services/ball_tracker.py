@@ -3,14 +3,22 @@ import numpy as np
 import logging
 from typing import List, Dict, Tuple, Optional
 from collections import deque
+try:
+    from .enhanced_ball_tracker import EnhancedBallTracker
+    from .yolo_detector import YOLOBallDetector
+    from .trajectory_modeling import BallTrajectoryModel
+    from .audio_impact_detector import AudioImpactDetector
+    ENHANCED_FEATURES_AVAILABLE = True
+except ImportError:
+    ENHANCED_FEATURES_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
 class BallTracker:
-    """Handles cricket ball detection and tracking in video frames."""
+    """Enhanced cricket ball detection and tracking with advanced physics modeling."""
     
     def __init__(self):
-        # Ball detection parameters
+        # Legacy ball detection parameters for backward compatibility
         self.min_ball_radius = 3
         self.max_ball_radius = 25
         self.ball_color_ranges = [
@@ -29,6 +37,17 @@ class BallTracker:
         # Initialize tracking state
         self.tracking_initialized = False
         self.last_known_position = None
+        
+        # Enhanced tracking components
+        self.enhanced_tracker = None
+        self.use_enhanced_features = ENHANCED_FEATURES_AVAILABLE
+        if self.use_enhanced_features:
+            self.yolo_detector = YOLOBallDetector()
+            self.trajectory_model = BallTrajectoryModel()
+            self.audio_detector = AudioImpactDetector()
+            logger.info("Enhanced ball tracking features enabled")
+        else:
+            logger.info("Using legacy ball tracking (enhanced features unavailable)")
         
     def detect_ball_candidates(self, frame: np.ndarray) -> List[Tuple[int, int, int]]:
         """

@@ -1,0 +1,382 @@
+I'll guide you through implementing the roadmap step-by-step. Let's start with **Immediate Fixes** (calibration, synchronization, YOLOv8) and progressively implement the advanced features. Here's the complete implementation plan:
+
+### 1. Immediate Fixes Implementation
+**File: `calibration.py`** (New file)
+```python
+import cv2
+import numpy as np
+import glob
+
+def calibrate_camera(chessboard_size=(9,6)):
+    objp = np.zeros((chessboard_size[0]*chessboard_size[1], 3), np.float32)
+    objp[:,:2] = np.mgrid[0:chessboard_size[0], 0:chessboard_size[1]].T.reshape(-1,2)
+    
+    objpoints = []  # 3D points
+    imgpoints = []  # 2D points
+    
+    images = glob.glob('calibration_images/*.jpg')
+    
+    for fname in images:
+        img = cv2.imread(fname)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
+        
+        if ret:
+            objpoints.append(objp)
+            corners2 = cv2.cornerSubPix(gray, corners, (11,11), (-1,-1), 
+                                        (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
+            imgpoints.append(corners2)
+    
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+    return mtx, dist
+
+def undistort_frame(frame, mtx, dist):
+    h, w = frame.shape[:2]
+    newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
+    return cv2.undistort(frame, mtx, dist, None, newcameramtx)
+```
+
+**File: `video_processing.py`** (Modify timestamp handling)
+```python
+# Add to existing imports
+import time
+
+def process_video(video_path):
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = 0
+    
+    # Load calibration data
+    calib_data = np.load('calibration_params.npz')
+    mtx, dist = calib_data['mtx'], calib_data['dist']
+    
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret: 
+            break
+        
+        # Get accurate timestamp
+        timestamp = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+        
+        # Undistort frame
+        frame = undistort_frame(frame, mtx, dist)
+        
+        # Synchronized processing
+        frame_count += 1
+        actual_time = frame_count / fps
+        time_diff = abs(timestamp - actual_time)
+        
+        if time_diff > 0.1:  # Threshold for sync error
+            print(f"Resyncing at frame {frame_count}: {time_diff:.4f}s diff")
+            # Implement resync logic here
+            
+        # Process frame (will integrate with ball detection)
+        yield frame, timestamp
+```
+
+**File: `ball_detection.py`** (Upgrade to YOLOv8)
+```python
+# Replace existing detection with
+from ultralytics import YOLO
+
+class BallDetector:
+    def __init__(self, model_path='models/yolov8n_cricket.pt'):
+        self.model = YOLO(model_path)
+        self.class_id = 0  # Assuming cricket ball is class 0
+        
+    def detect(self, frame):
+        results = self.model(frame, conf=0.7, verbose=False)
+        detections = []
+        
+        for result in results:
+            boxes = result.boxes.xyxy.cpu().numpy()
+            confs = result.boxes.conf.cpu().numpy()
+            cls_ids = result.boxes.cls.cpu().numpy()
+            
+            for box, conf, cls_id in zip(boxes, confs, cls_ids):
+                if int(cls_id) == self.class_id:
+                    x1, y1, x2, y2 = box
+                    detections.append({
+                        'bbox': (x1, y1, x2, y2),
+                        'confidence': conf,
+                        'class': 'ball'
+                    })
+        return detections
+```
+
+### 2. Medium-term Implementation
+**File: `pose_estimation.py`** (New file)
+```python
+import mediapipe as mp
+
+class PlayerPoseAnalyzer:
+    def __init__(self):
+        self.mp_pose = mp.solutions.pose
+        self.pose = self.mp_pose.Pose(
+            static_image_mode=False,
+            model_complexity=2,
+            enable_segmentation=False,
+            min_detection_confidence=0.7
+        )
+        self.landmark_names = {
+            self.mp_pose.PoseLandmark.LEFT_SHOULDER: "left_shoulder",
+            self.mp_pose.PoseLandmark.RIGHT_SHOULDER: "right_shoulder",
+            # Add all required landmarks
+        }
+    
+    def analyze_frame(self, frame):
+        results = self.pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        pose_data = {}
+        
+        if results.pose_landmarks:
+            for idx, landmark in enumerate(results.pose_landmarks.landmark):
+                if idx in self.landmark_names:
+                    pose_data[self.landmark_names[idx]] = (landmark.x, landmark.y, landmark.z)
+        
+        return self._calculate_kinematics(pose_data)
+    
+    def _calculate_kinematics(self, landmarks):
+        # Calculate bowling/batting kinematics
+        bowling_metrics = {}
+        batting_metrics = {}
+        
+        # Example: Calculate shoulder alignment
+        if 'left_shoulder' in landmarks and 'right_shoulder' in landmarks:
+            ls = landmarks['left_shoulder']
+            rs = landmarks['right_shoulder']
+            shoulder_angle = np.degrees(np.arctan2(rs[1]-ls[1], rs[0]-ls[0]))
+            bowling_metrics['shoulder_alignment'] = shoulder_angle
+        
+        # Add more kinematic calculations
+        return bowling_metrics, batting_metrics
+```
+
+**File: `trajectory_modeling.py`** (New file)
+```python
+import numpy as np
+from scipy.integrate import solve_ivp
+
+class BallTrajectoryModel:
+    def __init__(self):
+        self.g = 9.81  # Gravity
+        self.rho = 1.225  # Air density
+        self.c_d = 0.47  # Drag coefficient (sphere)
+        self.r = 0.036  # Ball radius (m)
+        self.area = np.pi * self.r**2
+        self.mass = 0.16  # Ball mass (kg)
+    
+    def predict_trajectory(self, initial_pos, initial_vel, spin, frames=60):
+        # Convert to 3D world coordinates
+        pos_3d = self._convert_to_3d(initial_pos)
+        vel_3d = self._convert_velocity(initial_vel)
+        
+        # Magnus effect parameters
+        magnus_force = self._calculate_magnus_force(vel_3d, spin)
+        
+        # Solve differential equations
+        solution = solve_ivp(
+            self._trajectory_equations,
+            [0, frames/30],  # 30 fps
+            [*pos_3d, *vel_3d],
+            args=(magnus_force,),
+            t_eval=np.linspace(0, frames/30, frames)
+        
+        return solution.y
+    
+    def _trajectory_equations(self, t, state, magnus_force):
+        x, y, z, vx, vy, vz = state
+        velocity = np.array([vx, vy, vz])
+        speed = np.linalg.norm(velocity)
+        
+        # Drag force
+        drag_force = -0.5 * self.rho * self.c_d * self.area * speed * velocity
+        
+        # Total acceleration
+        acceleration = drag_force/self.mass + np.array([0, 0, -self.g]) + magnus_force/self.mass
+        
+        return [vx, vy, vz, *acceleration]
+    
+    def _calculate_magnus_force(self, velocity, spin_vector):
+        return 1.5 * self.rho * 4/3*np.pi*self.r**3 * np.cross(spin_vector, velocity)
+    
+    def _convert_to_3d(self, image_point):
+        # Implement camera calibration to 3D conversion
+        return [0, 0, 0]  # Placeholder
+```
+
+### 3. Advanced Features Implementation
+**File: `hawkeye_prediction.py`** (New file)
+```python
+class HawkEyePredictor:
+    def __init__(self, pitch_dimensions=(20.12, 3.05)):  # Length, width in meters
+        self.trajectory_model = BallTrajectoryModel()
+        self.pitch_length, self.pitch_width = pitch_dimensions
+    
+    def predict_ball_path(self, ball_positions, timestamps):
+        # Filter valid positions
+        valid_positions = [p for p in ball_positions if p is not None]
+        
+        if len(valid_positions) < 3:
+            return None
+        
+        # Calculate velocity and spin
+        initial_vel = self._calculate_initial_velocity(valid_positions[:3], timestamps[:3])
+        spin = self._estimate_spin(valid_positions)
+        
+        # Predict full trajectory
+        trajectory = self.trajectory_model.predict_trajectory(
+            valid_positions[0], 
+            initial_vel,
+            spin
+        )
+        
+        # Calculate pitch impact point
+        impact_point = self._find_pitch_impact(trajectory)
+        
+        return {
+            'trajectory': trajectory,
+            'impact_point': impact_point,
+            'deviation': self._calculate_deviation(valid_positions, trajectory),
+            'predicted_speed': np.linalg.norm(initial_vel) * 3.6  # km/h
+        }
+    
+    def _estimate_spin(self, positions):
+        # Implement spin estimation from trajectory curvature
+        return [0, 0, 0]  # Placeholder
+```
+
+**File: `stroke_classifier.py`** (New file)
+```python
+import tensorflow as tf
+from tensorflow.keras import layers
+
+class StrokeClassifier:
+    def __init__(self, model_path='models/stroke_classifier.h5'):
+        self.model = tf.keras.models.load_model(model_path)
+        self.classes = ['defense', 'drive', 'cut', 'pull', 'sweep', 'loft']
+    
+    def classify_stroke(self, player_pose, bat_trajectory):
+        # Preprocess inputs
+        pose_features = self._extract_pose_features(player_pose)
+        bat_features = self._extract_bat_features(bat_trajectory)
+        
+        # Combine features
+        input_features = np.concatenate([pose_features, bat_features])
+        
+        # Predict
+        predictions = self.model.predict(input_features[np.newaxis, ...])
+        return self.classes[np.argmax(predictions)]
+    
+    def _extract_pose_features(self, pose):
+        # Convert pose landmarks to feature vector
+        return np.array([...])
+    
+    def _extract_bat_features(self, trajectory):
+        # Calculate bat swing metrics
+        return np.array([...])
+```
+
+**File: `audio_analysis.py`** (New file)
+```python
+import librosa
+import numpy as np
+
+class ImpactDetector:
+    def __init__(self):
+        self.impact_threshold = 0.8  # Learned from training data
+    
+    def detect_impact(self, audio_frame, sample_rate=44100):
+        # Extract features
+        mfcc = librosa.feature.mfcc(y=audio_frame, sr=sample_rate, n_mfcc=13)
+        spectral_centroid = librosa.feature.spectral_centroid(y=audio_frame, sr=sample_rate)
+        zero_crossing = librosa.feature.zero_crossing_rate(audio_frame)
+        
+        # Combine features
+        features = np.vstack([mfcc, spectral_centroid, zero_crossing])
+        
+        # Simple impact detection (replace with ML model)
+        impact_prob = self._impact_probability(features)
+        return impact_prob > self.impact_threshold
+    
+    def _impact_probability(self, features):
+        # Implement ML model here
+        return np.random.random()  # Placeholder
+```
+
+### Implementation Roadmap Execution
+
+1. **Setup Environment**:
+```bash
+pip install ultralytics mediapipe tensorflow scipy librosa opencv-python
+```
+
+2. **Calibration Process**:
+```bash
+mkdir calibration_images
+# Capture chessboard images from multiple angles
+python calibration.py
+```
+
+3. **YOLOv8 Training** (For cricket ball):
+```python
+from ultralytics import YOLO
+
+# Train custom cricket ball detector
+model = YOLO('yolov8n.pt')
+results = model.train(
+    data='cricket_ball.yaml',
+    epochs=100,
+    imgsz=640,
+    batch=16
+)
+```
+
+4. **Integration Pipeline** (`main_analysis.py`):
+```python
+from video_processing import process_video
+from ball_detection import BallDetector
+from pose_estimation import PlayerPoseAnalyzer
+from hawkeye_prediction import HawkEyePredictor
+
+def analyze_video(video_path):
+    # Initialize modules
+    ball_detector = BallDetector()
+    pose_analyzer = PlayerPoseAnalyzer()
+    hawkeye = HawkEyePredictor()
+    
+    ball_positions = []
+    timestamps = []
+    
+    for frame, timestamp in process_video(video_path):
+        # Ball detection
+        detections = ball_detector.detect(frame)
+        ball_pos = detections[0]['bbox'] if detections else None
+        ball_positions.append(ball_pos)
+        timestamps.append(timestamp)
+        
+        # Player pose analysis
+        bowling_metrics, batting_metrics = pose_analyzer.analyze_frame(frame)
+        
+        # Run prediction every 5 frames
+        if len(ball_positions) % 5 == 0:
+            prediction = hawkeye.predict_ball_path(ball_positions[-10:], timestamps[-10:])
+            if prediction:
+                print(f"Ball speed: {prediction['predicted_speed']:.1f} km/h")
+                print(f"Impact point: {prediction['impact_point']}")
+    
+    # Generate final analysis report
+    return generate_report(ball_positions, bowling_metrics, batting_metrics)
+```
+
+### Next Steps:
+1. Start with camera calibration using chessboard patterns
+2. Collect training data for custom YOLOv8 cricket ball detector
+3. Implement the frame processing pipeline with timestamp synchronization
+4. Gradually integrate modules following the workflow above
+
+Would you like me to:
+1. Provide sample calibration images
+2. Share a pre-trained YOLOv8 cricket ball model
+3. Explain the physics modeling in more detail
+4. Help with data collection strategies?

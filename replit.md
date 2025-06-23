@@ -22,10 +22,17 @@ The application follows a modular Flask architecture with separated concerns:
 - `pyproject.toml`: Python project configuration and dependencies
 
 ### Service Layer
-- `VideoProcessor`: Handles video validation, frame extraction, and metadata collection
-- `BallTracker`: Implements ball detection and tracking using OpenCV computer vision
+- `VideoProcessor`: Handles video validation, frame extraction, and metadata collection with camera calibration support
+- `BallTracker`: Enhanced multi-method ball detection combining YOLO, traditional CV, and physics-based tracking
+- `EnhancedBallTracker`: Professional-grade tracking with trajectory modeling, audio correlation, and Hawk-Eye prediction
+- `YOLOBallDetector`: Advanced ball detection using multiple computer vision techniques with object tracking
+- `TrajectoryModel`: Physics-based ball flight simulation with air resistance, Magnus effect, and bounce prediction
+- `CameraCalibrator`: Automatic camera calibration for accurate 3D trajectory reconstruction
+- `AudioImpactDetector`: Ball-bat impact detection using audio frequency analysis and spectral features
 - `PoseAnalyzer`: Uses MediaPipe for human pose estimation and batting technique analysis
+- `AdvancedPoseAnalyzer`: Comprehensive biomechanical analysis with kinematic calculations and technique assessment
 - `ReportGenerator`: Creates comprehensive performance reports from analysis data
+- `VisualizationGenerator`: Generates Hawk-Eye pitch plots and skeleton tracking overlays
 
 ### Frontend Components
 - `templates/index.html`: Main upload interface with drag-and-drop functionality
@@ -82,7 +89,12 @@ The deployment uses parallel workflow execution for better performance and inclu
 
 ```
 Changelog:
-- June 23, 2025. Initial setup
+- June 23, 2025: Initial cricket analysis application setup
+- June 23, 2025: Enhanced with Hawk-Eye style visualization and skeleton tracking
+- June 23, 2025: Comprehensive system upgrade - Advanced physics modeling, camera calibration, 
+  multi-method ball detection (YOLO + traditional CV), trajectory prediction with Magnus effect,
+  audio impact detection, enhanced pose analysis with kinematic calculations, and integrated
+  Hawk-Eye prediction system for professional-grade cricket analysis
 ```
 
 ## User Preferences
