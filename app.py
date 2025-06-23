@@ -11,6 +11,7 @@ from services.video_processor import VideoProcessor
 from services.ball_tracker import BallTracker
 from services.pose_analyzer import PoseAnalyzer
 from services.report_generator import ReportGenerator
+from services.visualization_generator import VisualizationGenerator
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -38,6 +39,7 @@ video_processor = VideoProcessor()
 ball_tracker = BallTracker()
 pose_analyzer = PoseAnalyzer()
 report_generator = ReportGenerator()
+visualization_generator = VisualizationGenerator()
 
 # Cache for processed videos
 analysis_cache = {}
@@ -149,10 +151,23 @@ def analyze_bowling(file_id):
         ball_tracking_data = ball_tracker.track_ball(frames)
         
         # Generate bowling report
+        video_info = video_processor.get_video_info(video_path)
         bowling_report = report_generator.generate_bowling_report(
             ball_tracking_data, 
-            video_processor.get_video_info(video_path)
+            video_info
         )
+        
+        # Generate Hawk-Eye style pitch plot visualization
+        pitch_plot = visualization_generator.generate_bowling_pitch_plot(
+            ball_tracking_data, 
+            video_info
+        )
+        
+        # Add visualization to report
+        bowling_report['visualizations'] = {
+            'pitch_plot': pitch_plot,
+            'pitch_plot_description': 'Hawk-Eye style ball trajectory and pitch analysis'
+        }
         
         # Cache the result
         analysis_cache[cache_key] = bowling_report
@@ -198,10 +213,23 @@ def analyze_batting(file_id):
         pose_data = pose_analyzer.analyze_batting_pose(frames)
         
         # Generate batting report
+        video_info = video_processor.get_video_info(video_path)
         batting_report = report_generator.generate_batting_report(
             pose_data, 
-            video_processor.get_video_info(video_path)
+            video_info
         )
+        
+        # Generate skeleton tracking frames and summary visualization
+        labeled_frames = visualization_generator.generate_labeled_batting_video(frames, pose_data)
+        summary_plot = visualization_generator.generate_batting_summary_plot(pose_data)
+        
+        # Add visualizations to report
+        batting_report['visualizations'] = {
+            'labeled_frames': labeled_frames,
+            'summary_plot': summary_plot,
+            'labeled_frames_description': 'Key frames with skeleton tracking and technique analysis overlay',
+            'summary_plot_description': 'Comprehensive batting technique analysis charts'
+        }
         
         # Cache the result
         analysis_cache[cache_key] = batting_report
@@ -243,6 +271,15 @@ def get_analysis_status(file_id):
     except Exception as e:
         logger.error(f"Status check error: {str(e)}")
         return jsonify({'error': 'Status check failed'}), 500
+
+@app.route('/api/processed/<filename>')
+def serve_processed_file(filename):
+    """Serve processed files like labeled videos."""
+    try:
+        return send_file(os.path.join(app.config['PROCESSED_FOLDER'], filename))
+    except Exception as e:
+        logger.error(f"Error serving processed file: {str(e)}")
+        return jsonify({'error': 'File not found'}), 404
 
 @app.route('/api/videos', methods=['GET'])
 def list_videos():
